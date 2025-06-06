@@ -21,29 +21,32 @@ pipeline {
 
         // Этап 2: Деплой через SSH
         stage('Deploy') {
-            steps {
-                script {
-                    // Копирование файлов на удаленный сервер
-                    sshPublisher(
-                        publishers: [
-                            sshPublisherDesc(
-                                configName: 'my-ssh-server',  // Имя SSH-сервера (настроено в Jenkins)
-                                transfers: [
-                                    sshTransfer(
-                                        sourceFiles: '**/*',  // Копируем все файлы
-                                        removePrefix: '',     // Не обрезаем пути
-                                        remoteDirectory: "app-${params.ENV}",  // Папка на сервере (app-dev или app-prod)
-                                        execCommand: """
-                                            echo "Файлы успешно скопированы в /var/www/app-${params.ENV}"
-                                            ls -la /var/www/app-${params.ENV}  # Проверка содержимого
-                                        """
-                                    )
-                                ]
-                            )
-                        ]
-                    )
-                }
+    steps {
+        script {
+            try {
+                sshPublisher(
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: 'my-ssh-server',
+                            transfers: [
+                                sshTransfer(
+                                    sourceFiles: '**/*',
+                                    remoteDirectory: "app-${params.ENV}",
+                                    execCommand: """
+                                        echo 'Деплой в ${params.ENV} успешен!'
+                                        ls -la /var/www/app-${params.ENV}
+                                    """
+                                )
+                            ]
+                        )
+                    ]
+                )
+            } catch (Exception e) {
+                echo "Ошибка деплоя: ${e.message}"
+                currentBuild.result = 'UNSTABLE'
             }
         }
+    }
+}
     }
 }
